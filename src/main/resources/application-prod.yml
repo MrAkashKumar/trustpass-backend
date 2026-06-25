@@ -1,0 +1,16 @@
+spring:
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+trustpass:
+  security:
+    jwt-secret: ${TRUSTPASS_JWT_SECRET}
+    admin-password: ${TRUSTPASS_ADMIN_PASSWORD}
+    approver-password: ${TRUSTPASS_APPROVER_PASSWORD}
+    auditor-password: ${TRUSTPASS_AUDITOR_PASSWORD}
+

@@ -1,0 +1,59 @@
+spring:
+  application:
+    name: trustpass-backend
+  datasource:
+    url: jdbc:h2:file:./data/trustpass;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  h2:
+    console:
+      enabled: false
+  jackson:
+    default-property-inclusion: non_null
+
+server:
+  port: 8080
+  error:
+    include-message: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+trustpass:
+  cors-origins: ${TRUSTPASS_CORS_ORIGINS:http://localhost:3000}
+  security:
+    jwt-secret: ${TRUSTPASS_JWT_SECRET:trustpass-development-secret-change-me-now-2026}
+    token-minutes: 60
+    admin-password: ${TRUSTPASS_ADMIN_PASSWORD:Admin123!}
+    approver-password: ${TRUSTPASS_APPROVER_PASSWORD:Approve123!}
+    auditor-password: ${TRUSTPASS_AUDITOR_PASSWORD:Audit123!}
+  integrations:
+    openai:
+      enabled: ${OPENAI_ENABLED:false}
+      api-key: ${OPENAI_API_KEY:}
+      model: ${OPENAI_MODEL:gpt-5.4-nano}
+      base-url: https://api.openai.com
+    elevenlabs:
+      enabled: ${ELEVENLABS_ENABLED:false}
+      api-key: ${ELEVENLABS_API_KEY:}
+      agent-id: ${ELEVENLABS_AGENT_ID:}
+      phone-number-id: ${ELEVENLABS_PHONE_NUMBER_ID:}
+      webhook-secret: ${ELEVENLABS_WEBHOOK_SECRET:}
+      base-url: https://api.elevenlabs.io
+
+logging:
+  level:
+    com.trustpass: INFO
+    org.springframework.security: WARN
