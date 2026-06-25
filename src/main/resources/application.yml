@@ -39,19 +39,25 @@ trustpass:
     admin-password: ${TRUSTPASS_ADMIN_PASSWORD:Admin123!}
     approver-password: ${TRUSTPASS_APPROVER_PASSWORD:Approve123!}
     auditor-password: ${TRUSTPASS_AUDITOR_PASSWORD:Audit123!}
+    agent-client:
+      enabled: ${TRUSTPASS_AGENT_CLIENT_ENABLED:false}
+      client-id: ${TRUSTPASS_AGENT_CLIENT_ID:}
+      api-key: ${TRUSTPASS_AGENT_API_KEY:}
   integrations:
     openai:
       enabled: ${OPENAI_ENABLED:false}
       api-key: ${OPENAI_API_KEY:}
       model: ${OPENAI_MODEL:gpt-5.4-nano}
-      base-url: https://api.openai.com
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+      organization-id: ${OPENAI_ORGANIZATION_ID:}
+      project-id: ${OPENAI_PROJECT_ID:}
     elevenlabs:
       enabled: ${ELEVENLABS_ENABLED:false}
       api-key: ${ELEVENLABS_API_KEY:}
       agent-id: ${ELEVENLABS_AGENT_ID:}
       phone-number-id: ${ELEVENLABS_PHONE_NUMBER_ID:}
       webhook-secret: ${ELEVENLABS_WEBHOOK_SECRET:}
-      base-url: https://api.elevenlabs.io
+      base-url: ${ELEVENLABS_BASE_URL:https://api.elevenlabs.io}
 
 logging:
   level:

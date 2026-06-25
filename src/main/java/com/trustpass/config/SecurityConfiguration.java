@@ -2,6 +2,7 @@ package com.trustpass.config;
 
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import com.nimbusds.jose.proc.SecurityContext;
+import com.trustpass.auth.AgentClientAuthenticationFilter;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import javax.crypto.SecretKey;
@@ -27,6 +28,7 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
@@ -37,7 +39,9 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @EnableMethodSecurity
 public class SecurityConfiguration {
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationConverter converter) throws Exception {
+    SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationConverter converter,
+                                            AgentClientAuthenticationFilter agentClientAuthenticationFilter)
+            throws Exception {
         return http
                 .csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
@@ -46,6 +50,7 @@ public class SecurityConfiguration {
                         .requestMatchers("/api/v1/auth/login", "/api/v1/webhooks/elevenlabs", "/actuator/health").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest().authenticated())
+                .addFilterBefore(agentClientAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .oauth2ResourceServer(resource -> resource.jwt(jwt -> jwt.jwtAuthenticationConverter(converter)))
                 .build();
     }
@@ -109,8 +114,9 @@ public class SecurityConfiguration {
         configuration.setAllowedOrigins(Arrays.stream(properties.corsOrigins().split(","))
                 .map(String::trim).filter(value -> !value.isBlank()).toList());
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Request-Id"));
-        configuration.setExposedHeaders(Arrays.asList("Location", "X-Request-Id"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Request-Id",
+                "X-TrustPass-Client-Id", "X-TrustPass-Api-Key", "Idempotency-Key"));
+        configuration.setExposedHeaders(Arrays.asList("Location", "X-Request-Id", "Idempotency-Key"));
         configuration.setAllowCredentials(false);
         configuration.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -118,4 +124,3 @@ public class SecurityConfiguration {
         return source;
     }
 }
-

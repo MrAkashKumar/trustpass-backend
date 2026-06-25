@@ -29,9 +29,15 @@ public class OpenAiRiskAssessmentAdapter implements RiskAssessmentPort {
         if (this.properties.apiKey() == null || this.properties.apiKey().isBlank()) {
             throw new IllegalStateException("OPENAI_API_KEY is required when OpenAI integration is enabled");
         }
-        this.client = builder.baseUrl(this.properties.baseUrl())
-                .defaultHeader("Authorization", "Bearer " + this.properties.apiKey())
-                .build();
+        RestClient.Builder clientBuilder = builder.baseUrl(this.properties.baseUrl())
+                .defaultHeader("Authorization", "Bearer " + this.properties.apiKey());
+        if (hasText(this.properties.organizationId())) {
+            clientBuilder.defaultHeader("OpenAI-Organization", this.properties.organizationId());
+        }
+        if (hasText(this.properties.projectId())) {
+            clientBuilder.defaultHeader("OpenAI-Project", this.properties.projectId());
+        }
+        this.client = clientBuilder.build();
     }
 
     @Override
@@ -79,5 +85,9 @@ public class OpenAiRiskAssessmentAdapter implements RiskAssessmentPort {
 
     private String stripCodeFence(String value) {
         return value.replaceFirst("^```(?:json)?\\s*", "").replaceFirst("\\s*```$", "").trim();
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 }

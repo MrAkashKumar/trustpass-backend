@@ -109,6 +109,15 @@ public class ApprovalRequestEntity {
     @Column(length = 180)
     private String executionReference;
 
+    @Column(length = 120)
+    private String externalRequestId;
+
+    @Column(length = 120)
+    private String idempotencyKey;
+
+    @Column(length = 64)
+    private String actionPayloadHash;
+
     @Version
     private long version;
 
@@ -118,7 +127,8 @@ public class ApprovalRequestEntity {
                                  String description, String target, BigDecimal amount, String currency,
                                  RiskAssessment risk, String policyName, String policyRationale,
                                  boolean identityVerificationRequired, ApprovalChannel requiredChannel,
-                                 PolicyDecision.Outcome outcome) {
+                                 PolicyDecision.Outcome outcome, String externalRequestId, String idempotencyKey,
+                                 String actionPayloadHash) {
         this.id = UUID.randomUUID();
         this.reference = "TP-" + id.toString().substring(0, 8).toUpperCase();
         this.agentId = agentId;
@@ -142,6 +152,9 @@ public class ApprovalRequestEntity {
             case REQUIRE_APPROVAL -> ApprovalStatus.PENDING;
             case DENY -> ApprovalStatus.DENIED;
         };
+        this.externalRequestId = externalRequestId;
+        this.idempotencyKey = idempotencyKey;
+        this.actionPayloadHash = actionPayloadHash;
         this.requestedAt = Instant.now();
         this.expiresAt = this.requestedAt.plusSeconds(24 * 60 * 60);
     }
@@ -226,6 +239,8 @@ public class ApprovalRequestEntity {
     public String getConsentProofHash() { return consentProofHash; }
     public String getNotificationReference() { return notificationReference; }
     public String getExecutionReference() { return executionReference; }
+    public String getExternalRequestId() { return externalRequestId; }
+    public String getIdempotencyKey() { return idempotencyKey; }
+    public String getActionPayloadHash() { return actionPayloadHash; }
     public long getVersion() { return version; }
 }
-

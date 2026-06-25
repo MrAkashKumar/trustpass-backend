@@ -49,20 +49,19 @@ public class DemoDataConfiguration {
 
             ApprovalRequestEntity purchase = approvals.create(new ApprovalService.CreateCommand(procurement.getId(),
                     ActionType.PURCHASE, "Purchase design review tool", "Annual team plan for the design group.",
-                    "Frameboard", new BigDecimal("49"), "USD", null), "system-seed");
+                    "Frameboard", new BigDecimal("49"), "USD", null, null, null, null), "system-seed");
             if (purchase.getStatus() == ApprovalStatus.AUTO_APPROVED) {
                 approvals.execute(purchase.getId(), "system-seed");
             }
             approvals.create(new ApprovalService.CreateCommand(travel.getId(), ActionType.TRAVEL_BOOKING,
                     "Singapore to Tokyo flight", "Singapore Airlines return flight for customer workshop.",
-                    "Singapore Airlines", new BigDecimal("850"), "SGD", null), "system-seed");
+                    "Singapore Airlines", new BigDecimal("850"), "SGD", null, null, null, null), "system-seed");
             approvals.create(new ApprovalService.CreateCommand(finance.getId(), ActionType.VENDOR_PAYMENT,
                     "Approve supplier milestone", "Second milestone payment after acceptance review.",
-                    "Orbit Systems Pte Ltd", new BigDecimal("12500"), "SGD", null), "system-seed");
+                    "Orbit Systems Pte Ltd", new BigDecimal("12500"), "SGD", null, null, null, null), "system-seed");
             approvals.create(new ApprovalService.CreateCommand(procurement.getId(), ActionType.CONTRACT_SIGNING,
                     "Sign enterprise data contract", "Three-year analytics platform agreement.",
-                    "Northstar Analytics", new BigDecimal("30000"), "USD", null), "system-seed");
+                    "Northstar Analytics", new BigDecimal("30000"), "USD", null, null, null, null), "system-seed");
         };
     }
 }
-

@@ -13,11 +13,21 @@ public record TrustPassProperties(
             long tokenMinutes,
             String adminPassword,
             String approverPassword,
-            String auditorPassword
+            String auditorPassword,
+            AgentClient agentClient
     ) {}
 
+    public record AgentClient(boolean enabled, String clientId, String apiKey) {}
+
     public record Integrations(OpenAi openai, ElevenLabs elevenlabs) {
-        public record OpenAi(boolean enabled, String apiKey, String model, String baseUrl) {}
+        public record OpenAi(
+                boolean enabled,
+                String apiKey,
+                String model,
+                String baseUrl,
+                String organizationId,
+                String projectId
+        ) {}
 
         public record ElevenLabs(
                 boolean enabled,

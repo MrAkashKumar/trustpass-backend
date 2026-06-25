@@ -61,6 +61,11 @@ public class ApprovalService {
 
     @Transactional
     public ApprovalRequestEntity create(CreateCommand command, String actor) {
+        Optional<ApprovalRequestEntity> existing = existingRequest(command);
+        if (existing.isPresent()) {
+            return existing.get();
+        }
+
         AgentEntity agent = agentRepository.findById(command.agentId())
                 .orElseThrow(() -> new AgentNotFoundException(command.agentId()));
         RiskAssessment risk = riskAssessment.assess(new RiskAssessmentPort.Input(command.actionType(),
@@ -74,17 +79,22 @@ public class ApprovalService {
                 command.actionType(), command.summary(), command.description(), command.target(), command.amount(),
                 command.currency(), risk, policy.map(PolicyEntity::getName).orElse("Fail-closed default"),
                 decision.rationale(), policy.map(PolicyEntity::isIdentityVerificationRequired).orElse(true),
-                policy.map(PolicyEntity::getApprovalChannel).orElse(ApprovalChannel.WEB), decision.outcome());
+                policy.map(PolicyEntity::getApprovalChannel).orElse(ApprovalChannel.WEB), decision.outcome(),
+                normalize(command.externalRequestId()), normalize(command.idempotencyKey()),
+                normalize(command.actionPayloadHash()));
         approval = approvalRepository.save(approval);
 
-        auditService.append("APPROVAL", approval.getId(), "APPROVAL_REQUESTED", actor, Map.of(
-                "reference", approval.getReference(),
-                "agentId", approval.getAgentId(),
-                "actionType", approval.getActionType(),
-                "amount", approval.getAmount(),
-                "currency", approval.getCurrency(),
-                "riskScore", approval.getRiskScore(),
-                "status", approval.getStatus()));
+        Map<String, Object> details = new HashMap<>();
+        details.put("reference", approval.getReference());
+        details.put("agentId", approval.getAgentId());
+        details.put("actionType", approval.getActionType());
+        details.put("amount", approval.getAmount());
+        details.put("currency", approval.getCurrency());
+        details.put("riskScore", approval.getRiskScore());
+        details.put("status", approval.getStatus());
+        if (approval.getExternalRequestId() != null) details.put("externalRequestId", approval.getExternalRequestId());
+        if (approval.getActionPayloadHash() != null) details.put("actionPayloadHash", approval.getActionPayloadHash());
+        auditService.append("APPROVAL", approval.getId(), "APPROVAL_REQUESTED", actor, details);
 
         if (approval.getStatus() == ApprovalStatus.PENDING) {
             Optional<String> notificationReference = notification.notifyApprover(approval, command.approverPhone());
@@ -128,6 +138,20 @@ public class ApprovalService {
     }
 
     @Transactional
+    public ApprovalRequestEntity recordExternalExecution(UUID id, String executionReference, String actor) {
+        ApprovalRequestEntity approval = find(id);
+        if (approval.getExternalRequestId() == null) {
+            throw new IllegalStateException("Only agent-originated approvals can receive external execution results");
+        }
+        approval.execute(executionReference);
+        ApprovalRequestEntity saved = approvalRepository.save(approval);
+        auditService.append("APPROVAL", id, "EXTERNAL_ACTION_EXECUTED", actor, Map.of(
+                "executionReference", executionReference,
+                "status", saved.getStatus()));
+        return saved;
+    }
+
+    @Transactional
     public ApprovalRequestEntity decideFromVoice(UUID id, DecisionType decision, boolean identityVerified,
                                                  String conversationId) {
         return decide(id, decision, "Decision captured by verified voice workflow", ApprovalChannel.VOICE,
@@ -136,6 +160,31 @@ public class ApprovalService {
 
     private ApprovalRequestEntity find(UUID id) {
         return approvalRepository.findById(id).orElseThrow(() -> new ApprovalNotFoundException(id));
+    }
+
+    private Optional<ApprovalRequestEntity> existingRequest(CreateCommand command) {
+        Optional<ApprovalRequestEntity> byIdempotency = Optional.ofNullable(normalize(command.idempotencyKey()))
+                .flatMap(approvalRepository::findByIdempotencyKey);
+        if (byIdempotency.isPresent()) {
+            validateSamePayloadHash(byIdempotency.get(), command.actionPayloadHash());
+            return byIdempotency;
+        }
+        Optional<ApprovalRequestEntity> byExternalRequest = Optional.ofNullable(normalize(command.externalRequestId()))
+                .flatMap(approvalRepository::findByExternalRequestId);
+        byExternalRequest.ifPresent(approval -> validateSamePayloadHash(approval, command.actionPayloadHash()));
+        return byExternalRequest;
+    }
+
+    private void validateSamePayloadHash(ApprovalRequestEntity existing, String requestedPayloadHash) {
+        String requested = normalize(requestedPayloadHash);
+        String existingHash = normalize(existing.getActionPayloadHash());
+        if (requested != null && existingHash != null && !existingHash.equalsIgnoreCase(requested)) {
+            throw new IllegalStateException("Idempotent request payload hash does not match the existing approval");
+        }
+    }
+
+    private String normalize(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 
     private String consentProof(UUID id, DecisionType decision, String actor, ApprovalChannel channel,
@@ -152,7 +201,9 @@ public class ApprovalService {
             String target,
             BigDecimal amount,
             String currency,
-            String approverPhone
+            String approverPhone,
+            String externalRequestId,
+            String idempotencyKey,
+            String actionPayloadHash
     ) {}
 }
-

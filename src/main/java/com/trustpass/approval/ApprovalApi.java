@@ -52,7 +52,7 @@ public class ApprovalApi {
     public ResponseEntity<Response> create(@Valid @RequestBody CreateRequest request, Principal principal) {
         ApprovalRequestEntity saved = service.create(new ApprovalService.CreateCommand(request.agentId(),
                 request.actionType(), request.summary(), request.description(), request.target(), request.amount(),
-                request.currency(), request.approverPhone()), principal.getName());
+                request.currency(), request.approverPhone(), null, null, null), principal.getName());
         return ResponseEntity.created(URI.create("/api/v1/approvals/" + saved.getId())).body(Response.from(saved));
     }
 
@@ -116,7 +116,9 @@ public class ApprovalApi {
             boolean identityVerified,
             String consentProofHash,
             String notificationReference,
-            String executionReference
+            String executionReference,
+            String externalRequestId,
+            String actionPayloadHash
     ) {
         public static Response from(ApprovalRequestEntity approval) {
             return new Response(approval.getId(), approval.getReference(), approval.getAgentId(),
@@ -128,8 +130,8 @@ public class ApprovalApi {
                     approval.getRequestedAt(), approval.getExpiresAt(), approval.getDecidedAt(),
                     approval.getExecutedAt(), approval.getDecisionBy(), approval.getDecisionComment(),
                     approval.getDecisionChannel(), approval.isIdentityVerified(), approval.getConsentProofHash(),
-                    approval.getNotificationReference(), approval.getExecutionReference());
+                    approval.getNotificationReference(), approval.getExecutionReference(),
+                    approval.getExternalRequestId(), approval.getActionPayloadHash());
         }
     }
 }
-
